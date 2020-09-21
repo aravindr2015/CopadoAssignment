@@ -1,0 +1,30 @@
+trigger AccountTrigger on Account (after insert, after update) {
+    if(trigger.isInsert || trigger.isUpdate){
+        List<aravmapping__mdt> mapList = [Select Id,DeveloperName,Field_api_name__c,Data_type__c from aravmapping__mdt];
+        JSONGenerator gen = JSON.createGenerator(true);
+         gen.writeStartObject();
+        gen.writeFieldName('AccountList');
+        gen.writeStartArray();
+        for(Account acc:trigger.new){
+    		gen.writeStartObject();
+            if(mapList != null){
+                for(aravmapping__mdt mapRec:mapList){
+                    if(mapRec.Data_type__c == 'string' && acc.get(mapRec.Field_api_name__c) != null){
+                        gen.writeStringField(mapRec.Field_api_name__c, (String)acc.get(mapRec.Field_api_name__c));
+                    }
+                    else if(mapRec.Data_type__c == 'number' && acc.get(mapRec.Field_api_name__c) != null){
+                        gen.writeNumberField(mapRec.Field_api_name__c, (Decimal)acc.get(mapRec.Field_api_name__c));
+                    }
+                    
+                }
+            }
+            gen.writeStringField('aravid__c', acc.Id);
+            gen.writeEndObject();
+            
+        }
+        gen.writeEndArray();
+		gen.writeEndObject();
+        AccountTriggerHandler.createUpdateAccounts(gen.getAsString());
+    }
+    
+}
